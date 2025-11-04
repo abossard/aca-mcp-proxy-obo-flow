@@ -1,0 +1,11 @@
+name: mcp-wrapper
+services:
+  api:
+    language: dotnet
+    project: ./src/MCPWrapper/MCPWrapper.Api
+    host: containerapp
+    docker:
+      context: ../
+      remoteBuild: true
+infra:
+  provider: terraform

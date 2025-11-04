@@ -1,0 +1,51 @@
+locals {
+  tags                      = { azd-env-name : var.environment_name }
+  sha                       = base64encode(sha256("${var.environment_name}${var.location}${data.azurerm_client_config.current.subscription_id}"))
+  resource_token            = substr(replace(lower(local.sha), "[^A-Za-z0-9_]", ""), 0, 13)
+  role_assignment_namespace = "e4c4a0c3-5e5e-4a78-b110-ba1a51c0c638" # Fixed namespace UUID
+}
+
+resource "azurerm_resource_group" "rg" {
+  name     = "${var.environment_name}-rg"
+  location = var.location
+  tags     = local.tags
+}
+
+resource "azurerm_container_registry" "acr" {
+  location                      = azurerm_resource_group.rg.location
+  name                          = "acr${var.environment_name}domal"
+  resource_group_name           = azurerm_resource_group.rg.name
+  sku                           = "Basic"
+  admin_enabled                 = false
+  public_network_access_enabled = true
+  tags                          = local.tags
+}
+
+resource "azurerm_container_app_environment" "cae" {
+  name                       = "cae-${var.environment_name}"
+  location                   = azurerm_resource_group.rg.location
+  resource_group_name        = azurerm_resource_group.rg.name
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
+  tags                       = local.tags
+}
+
+# Create Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "law" {
+  name                = "${var.environment_name}-law"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018" # Cost-effective SKU
+  retention_in_days   = 30
+  tags                = local.tags
+}
+
+# Create Application Insights instance backed by the Log Analytics Workspace
+resource "azurerm_application_insights" "app_insights" {
+  name                = "${var.environment_name}-appinsights"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  application_type    = "web"
+  workspace_id        = azurerm_log_analytics_workspace.law.id
+  tags                = local.tags
+}
+
