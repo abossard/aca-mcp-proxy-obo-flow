@@ -485,3 +485,4 @@ $RECYCLE.BIN/
 infra/.terraform.lock.hcl
 
 appsettings.local.json
+appsettings.Development.json

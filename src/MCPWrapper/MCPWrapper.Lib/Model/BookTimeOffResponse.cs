@@ -1,4 +1,7 @@
+using System.Text.Json.Serialization;
+
 namespace MCPWrapper.Lib.Model;
+
 public class BookTimeOffResponse
 {
     public int StatusCode { get; set; }

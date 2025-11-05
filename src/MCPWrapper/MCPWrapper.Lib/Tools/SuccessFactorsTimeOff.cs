@@ -6,26 +6,25 @@ using System.Text.Json;
 using MCPWrapper.Lib.Model;
 using MCPWrapper.Lib.Config;
 using MCPWrapper.Lib.Extensions;
+using MCPWrapper.Lib.Adapter;
 
 namespace MCPWrapper.Lib.Tools;
 
-[McpServerToolType]
-public sealed class SuccessFactorsTimeOffTools
+public sealed class SuccessFactorsTimeOffService
 {
     private readonly IHttpClientFactory httpClientFactory;
     private readonly SuccessFactorsConfig config;
 
-    public SuccessFactorsTimeOffTools(IHttpClientFactory httpClientFactory, IOptions<SuccessFactorsConfig> options)
+    public SuccessFactorsTimeOffService(IHttpClientFactory httpClientFactory, IOptions<SuccessFactorsConfig> options)
     {
         this.httpClientFactory = httpClientFactory;
         this.config = options.Value;
     }
 
-    [McpServerTool, Description("Book time off for an employee.")]
     public async Task<BookTimeOffResponse> BookTimeOff(
-        [Description("Employee ID")] string userId,
-        [Description("Start date of time off")] DateTime startDate,
-        [Description("End date of time off")] DateTime endDate)
+        string userId,
+        DateTime startDate,
+        DateTime endDate)
     {
         var externalCode = $"REQ_{Guid.NewGuid():N}"[..15]; // Limit to 12 chars like Python example
 
@@ -34,40 +33,42 @@ public sealed class SuccessFactorsTimeOffTools
         var endDateSap = endDate.ToSapDateFormat();
 
         // Build SAP payload according to ECTimeOff.json schema
-        var payload = new
+        var payload = new BookTimeOffRequest
         {
-            __metadata = new
+            Metadata = new BookTimeOffMetadata
             {
-                uri = $"{config.SuccessFactorsBaseUrl}/EmployeeTime('{externalCode}')",
-                type = "SFOData.EmployeeTime"
+            Uri = $"{config.SuccessFactorsBaseUrl}/EmployeeTime('{externalCode}')",
+            Type = "SFOData.EmployeeTime"
             },
-            userId = userId,
-            timeType = "TT_VAC_REC",
-            startDate = startDateSap,
-            endDate = endDateSap,
-            approvalStatus = "PENDING",
-            externalCode = externalCode,
-            userIdNav = new
+            UserId = userId,
+            TimeType = "TT_VAC_REC",
+            StartDate = startDateSap,
+            EndDate = endDateSap,
+            ApprovalStatus = "PENDING",
+            ExternalCode = externalCode,
+            UserIdNav = new BookTimeOffNavigationProperty
             {
-                __metadata = new
-                {
-                    uri = $"{config.SuccessFactorsBaseUrl}/User('{userId}')",
-                    type = "SFOData.User"
-                }
+            Metadata = new BookTimeOffMetadata
+            {
+                Uri = $"{config.SuccessFactorsBaseUrl}/User('{userId}')",
+                Type = "SFOData.User"
+            }
             },
-            timeTypeNav = new
+            TimeTypeNav = new BookTimeOffNavigationProperty
             {
-                __metadata = new
-                {
-                    uri = $"{config.SuccessFactorsBaseUrl}/TimeType('TT_VAC_REC')",
-                    type = "SFOData.TimeType"
-                }
+            Metadata = new BookTimeOffMetadata
+            {
+                Uri = $"{config.SuccessFactorsBaseUrl}/TimeType('TT_VAC_REC')",
+                Type = "SFOData.TimeType"
+            }
             }
         };
 
+        //Console.WriteLine($"Payload for BookTimeOff: {JsonSerializer.Serialize(payload)}");
+
         var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
-        var response = await httpClient.PostAsJsonAsync(
+        var response = await httpClient.PostAsJsonAsync<BookTimeOffRequest>(
             $"{config.SuccessFactorsBaseUrl}/upsert?workflowConfirmed=true&$format=json",
             payload);
 
@@ -82,13 +83,10 @@ public sealed class SuccessFactorsTimeOffTools
         };
     }
 
-
-
-    [McpServerTool, Description("List all time off requests for an employee.")]
     public async Task<ListTimeOffResponse> ListTimeOffRequests(
-        [Description("Employee ID")] string userId,
-        [Description("Optional: Start date filter (inclusive) - only show requests starting on or after this date")] DateTime? startDateFilter = null,
-        [Description("Optional: End date filter (inclusive) - only show requests ending on or before this date")] DateTime? endDateFilter = null)
+        string userId,
+        DateTime? startDateFilter = null,
+        DateTime? endDateFilter = null)
     {
 
         var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
@@ -172,9 +170,8 @@ public sealed class SuccessFactorsTimeOffTools
     }
     
 
-    [McpServerTool, Description("Delete a time off request by external code.")]
     public async Task<DeleteTimeOffResponse> DeleteTimeOffRequest(
-        [Description("External code of the time off request to delete")] string externalCode)
+        string externalCode)
     {
         var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
         httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
