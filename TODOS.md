@@ -8,13 +8,13 @@ Team M:
 # [✅] 3.1 the current tags are only relevant when AZD is used to deploy the resources. So add a new variable add_azd_tags (default: true). When this variable is true, the tags should be added to the resources.
 # [✅] 3.2 Add lifecycle ignore to the tags, since azure policies might change or add tags
 
-# [ ] 4. Network improvments:
+# [✅] 4. Network improvments:
 # [✅] 4.1 research online what the different Azure Container Apps networking options are (vnet integration, private endpoints, and document them as markdown in a docs folder).
 Best would be a completely private setup a hidden vnet and a private endpopint that can be added to another existing subnet.
 Second best would be a small as possible subnet with vnet
 Third best would be anything else.
 This is only reasearch and documentation, no implementation needed.
-# [ ] 4.2 implement the best possible networking Options 1 from docs/networking-options.md with this variables:
+# [✅] 4.2 implement the best possible networking Options 1 from docs/networking-options.md with this variables:
 - always use workload profiles v2
 - the containerapp can still be on the consumption plan
 - add a variable enable_public_ingress (default: true)
