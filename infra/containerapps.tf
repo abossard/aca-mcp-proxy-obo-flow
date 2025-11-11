@@ -13,7 +13,7 @@ resource "azurerm_container_app" "api" {
   container_app_environment_id = azurerm_container_app_environment.cae.id
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
-  tags                         = merge(local.tags, { "azd-service-name" : "api" })
+  tags                         = var.add_azd_tags ? merge(local.tags, { "azd-service-name" : "api" }) : local.tags
   identity {
     type = "UserAssigned"
     identity_ids = [
@@ -50,6 +50,10 @@ resource "azurerm_container_app" "api" {
         }
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [tags]
   }
 }
 

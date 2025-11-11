@@ -20,3 +20,9 @@ variable "service_api_image_name" {
   description = "The name of the service api image"
   type        = string
 }
+
+variable "add_azd_tags" {
+  description = "Whether to add Azure Developer CLI (azd) specific tags to resources. Set to false when not using azd for deployment."
+  type        = bool
+  default     = true
+}
