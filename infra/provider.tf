@@ -10,14 +10,6 @@ terraform {
       source  = "Azure/azapi"
       version = "2.2.0"
     }
-    sqlsso = {
-      source  = "jason-johnson/sqlsso"
-      version = "~>1.3"
-    }
-    publicip = {
-      source  = "nxt-engineering/publicip"
-      version = "0.0.9"
-    }
   }
 }
 
