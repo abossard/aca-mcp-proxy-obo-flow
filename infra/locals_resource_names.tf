@@ -6,7 +6,7 @@ locals {
   container_registry_name = coalesce(var.container_registry_name, "acr${var.environment_name}domal")
 
   # Container App Environment
-  container_app_environment_name = coalesce(var.container_app_environment_name, "cae-${var.environment_name}")
+  container_app_environment_name = coalesce(var.container_app_environment_name, "caev2-${var.environment_name}")
 
   # Log Analytics Workspace
   log_analytics_workspace_name = coalesce(var.log_analytics_workspace_name, "${var.environment_name}-law")

@@ -34,6 +34,6 @@ output "MCP_PROXY_APP_OBJECT_ID" {
 }
 
 output "MCP_PROXY_IDENTIFIER_URI" {
-  value       = "api://${data.azurerm_client_config.current.tenant_id}/${var.environment_name}-mcp-proxy"
+  value       = "api://${data.azurerm_client_config.current.tenant_id}/${local.app_registration_name}"
   description = "Identifier URI for the MCP Proxy app registration"
 }

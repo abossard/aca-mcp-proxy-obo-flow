@@ -34,11 +34,26 @@ resource "azurerm_container_app_environment" "cae" {
   location                   = azurerm_resource_group.rg.location
   resource_group_name        = azurerm_resource_group.rg.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
+  infrastructure_subnet_id   = local.enable_vnet_integration ? local.resolved_cae_subnet_id : null
   tags                       = local.tags
+
+  # Workload profiles environment (v2) - supports both consumption and dedicated plans
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+  }
+
+  # Automatically disable public network access when private endpoint is configured
+  # Private endpoints require public_network_access = "Disabled"
+  public_network_access = local.public_network_access_enabled ? "Enabled" : "Disabled"
 
   lifecycle {
     ignore_changes = [tags]
   }
+
+  depends_on = [
+    azurerm_subnet.cae_subnet
+  ]
 }
 
 # Create Log Analytics Workspace
