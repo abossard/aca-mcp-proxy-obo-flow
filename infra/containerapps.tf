@@ -1,15 +1,15 @@
 locals {
   common_env_vars = {
-    AZURE_TENANT_ID                        = data.azurerm_client_config.current.tenant_id
-    AZURE_CLIENT_ID                        = azurerm_user_assigned_identity.managed_identity.client_id
-    APPLICATIONINSIGHTS_CONNECTION_STRING  = azurerm_application_insights.app_insights.connection_string
-    API_ENDPOINT                           = "https://api.${azurerm_container_app_environment.cae.default_domain}"
-    ASPNETCORE_ENVIRONMENT                 = "Development"
+    AZURE_TENANT_ID                       = data.azurerm_client_config.current.tenant_id
+    AZURE_CLIENT_ID                       = azurerm_user_assigned_identity.managed_identity.client_id
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.app_insights.connection_string
+    API_ENDPOINT                          = "https://api.${azurerm_container_app_environment.cae.default_domain}"
+    ASPNETCORE_ENVIRONMENT                = "Development"
   }
 }
 
 resource "azurerm_container_app" "api" {
-  name                         = "api"
+  name                         = local.container_app_name
   container_app_environment_id = azurerm_container_app_environment.cae.id
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
@@ -57,7 +57,7 @@ resource "azurerm_container_app" "api" {
 # Note: azurerm_container_app does not support auth blocks natively yet (GitHub issue #22213)
 resource "azapi_resource" "api_auth_config" {
   type      = "Microsoft.App/containerApps/authConfigs@2023-05-01"
-  name      = "current"
+  name      = local.auth_config_name
   parent_id = azurerm_container_app.api.id
 
   body = {
@@ -77,7 +77,7 @@ resource "azapi_resource" "api_auth_config" {
           }
           validation = {
             allowedAudiences = [
-              "api://${data.azurerm_client_config.current.tenant_id}/${var.environment_name}-mcp-proxy"
+              "api://${data.azurerm_client_config.current.tenant_id}/${local.app_registration_name}"
             ]
           }
         }

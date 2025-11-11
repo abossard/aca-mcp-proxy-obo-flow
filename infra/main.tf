@@ -6,14 +6,14 @@ locals {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.environment_name}-rg"
+  name     = local.resource_group_name
   location = var.location
   tags     = local.tags
 }
 
 resource "azurerm_container_registry" "acr" {
   location                      = azurerm_resource_group.rg.location
-  name                          = "acr${var.environment_name}domal"
+  name                          = local.container_registry_name
   resource_group_name           = azurerm_resource_group.rg.name
   sku                           = "Basic"
   admin_enabled                 = false
@@ -22,7 +22,7 @@ resource "azurerm_container_registry" "acr" {
 }
 
 resource "azurerm_container_app_environment" "cae" {
-  name                       = "cae-${var.environment_name}"
+  name                       = local.container_app_environment_name
   location                   = azurerm_resource_group.rg.location
   resource_group_name        = azurerm_resource_group.rg.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
@@ -31,7 +31,7 @@ resource "azurerm_container_app_environment" "cae" {
 
 # Create Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "law" {
-  name                = "${var.environment_name}-law"
+  name                = local.log_analytics_workspace_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "PerGB2018" # Cost-effective SKU
@@ -41,7 +41,7 @@ resource "azurerm_log_analytics_workspace" "law" {
 
 # Create Application Insights instance backed by the Log Analytics Workspace
 resource "azurerm_application_insights" "app_insights" {
-  name                = "${var.environment_name}-appinsights"
+  name                = local.application_insights_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   application_type    = "web"

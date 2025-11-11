@@ -1,7 +1,7 @@
 
 
 resource "azurerm_user_assigned_identity" "managed_identity" {
-  name                = "${var.environment_name}-identity"
+  name                = local.managed_identity_name
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   tags                = local.tags
@@ -9,10 +9,10 @@ resource "azurerm_user_assigned_identity" "managed_identity" {
 
 # Entra ID App Registration with Federated Identity (no secrets)
 resource "azuread_application" "mcp_proxy" {
-  display_name = "${var.environment_name}-mcp-proxy"
+  display_name = local.app_registration_name
 
   # API exposure - defines this app as a resource server
-  identifier_uris = ["api://${data.azurerm_client_config.current.tenant_id}/${var.environment_name}-mcp-proxy"]
+  identifier_uris = ["api://${data.azurerm_client_config.current.tenant_id}/${local.app_registration_name}"]
 
   # Enable OAuth2 implicit flow if needed for SPA/testing
   web {
@@ -20,7 +20,7 @@ resource "azuread_application" "mcp_proxy" {
     redirect_uris = [
       "https://api.${azurerm_container_app_environment.cae.default_domain}/.auth/login/aad/callback",
     ]
-    
+
     implicit_grant {
       access_token_issuance_enabled = false
       id_token_issuance_enabled     = true
@@ -50,7 +50,7 @@ resource "azuread_service_principal" "mcp_proxy" {
 # Federated Identity Credential - links managed identity to app registration
 resource "azuread_application_federated_identity_credential" "mcp_proxy_managed_identity" {
   application_id = azuread_application.mcp_proxy.id
-  display_name   = "${var.environment_name}-managed-identity-federation"
+  display_name   = local.federated_identity_credential_name
   description    = "Federated credential for ${var.environment_name} managed identity to access app registration without secrets"
 
   audiences = ["api://AzureADTokenExchange"]
