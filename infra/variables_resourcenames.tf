@@ -10,6 +10,12 @@ variable "container_registry_name" {
   default     = ""
 }
 
+variable "infrastructure_resource_group_name" {
+  description = "Optional override for infrastructure resource group name for Container Apps Environment. If empty, uses default naming convention."
+  type        = string
+  default     = ""
+}
+
 variable "container_app_environment_name" {
   description = "Optional override for container app environment name. If empty, uses default naming convention."
   type        = string

@@ -20,6 +20,7 @@ resource "azurerm_container_app" "api" {
       azurerm_user_assigned_identity.managed_identity.id
     ]
   }
+  workload_profile_name = local.container_app_environment_workload_profile_name
   ingress {
     allow_insecure_connections = false
     external_enabled           = var.enable_public_network
