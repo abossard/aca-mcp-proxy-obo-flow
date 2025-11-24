@@ -38,3 +38,6 @@ Team J:
 # [ ] 7. Integrate with Azure DevOps
 
 # [ ] 8. (MCP Authentication Flow: JWT vs MCP Auth)
+
+
+![alt text](image.png)
