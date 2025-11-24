@@ -32,7 +32,7 @@ This is only reasearch and documentation, no implementation needed.
 # [ ] 5. Configuration: Target Scope and OBO Exchange Function, configurable (API Scopes, App Registrations, Permissions, Admin Consent)
 
 - confirmed to be real user tokens!
-- see ![alt text](image.png)
+- see ![alt text](docs/obo_flow.png)
 - add configuration for JWT authentication (AzAPI)
 
 # [✅] 6. Readme file for the setup (e.g. based on the Terraform IaC)
