@@ -174,6 +174,52 @@ terraform plan -var-file=main.tfvars.json
 terraform apply -var-file=main.tfvars.json
 ```
 
+## 🚀 Deployment Scenarios & Configuration
+
+This project supports two distinct deployment models to accommodate different organizational constraints (e.g., "Team M" vs "Team J").
+
+### Scenario A: Full Provisioning ("Team M" / Development)
+**Ideal for:** Developers, POCs, and environments where you have permission to create Entra ID App Registrations.
+
+In this mode, Terraform manages **everything**:
+- Azure Infrastructure (Container Apps, ACR, etc.)
+- **Entra ID Resources** (App Registration, Service Principal, Federated Credentials)
+- **Admin Consent** (via API calls in Terraform)
+
+**Configuration:**
+```hcl
+enable_entra_setup = true
+entra_app_name     = "mcp-proxy-dev"
+```
+
+### Scenario B: Pre-Provisioned Identity ("Team J" / Production)
+**Ideal for:** Production environments or restricted organizations where Identity resources are managed by a separate team.
+
+In this mode, Terraform **only** deploys Azure Infrastructure. It expects the Entra ID resources to exist and takes their IDs as input.
+
+**Configuration:**
+```hcl
+enable_entra_setup = false
+
+# Pass the details of the pre-created App Registration
+existing_entra_config = {
+  client_id = "00000000-0000-0000-0000-000000000000"
+  tenant_id = "00000000-0000-0000-0000-000000000000"
+  object_id = "00000000-0000-0000-0000-000000000000" # Service Principal Object ID
+}
+```
+
+### 🌐 Networking Options
+
+The project supports flexible networking configurations via Terraform variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `enable_public_network` | `true` | **True**: App is accessible via public internet.<br>**False**: App is private-only (requires Private Endpoint or VNet integration). |
+| `create_dummy_vnet` | `true` | **True**: Creates a new VNet/Subnet for testing.<br>**False**: Use existing VNet (must provide `container_apps_subnet_id`). |
+| `container_apps_subnet_id` | `""` | ID of the existing subnet for the Container App Environment (required if `create_dummy_vnet = false`). |
+| `private_endpoint_subnet_id`| `""` | ID of the subnet to place the Private Endpoint (if `enable_public_network = false`). |
+
 ## 🎨 Environment Variables
 
 The container app automatically receives:

@@ -24,16 +24,16 @@ output "AZURE_CONTAINER_REGISTRY_ENDPOINT" {
 }
 
 output "MCP_PROXY_APP_CLIENT_ID" {
-  value       = azuread_application.mcp_proxy.client_id
+  value       = var.enable_entra_setup ? azuread_application.mcp_proxy[0].client_id : try(var.existing_entra_config.client_id, "")
   description = "Client ID of the MCP Proxy Entra ID app registration"
 }
 
 output "MCP_PROXY_APP_OBJECT_ID" {
-  value       = azuread_application.mcp_proxy.object_id
+  value       = var.enable_entra_setup ? azuread_application.mcp_proxy[0].object_id : try(var.existing_entra_config.object_id, "")
   description = "Object ID of the MCP Proxy Entra ID app registration"
 }
 
 output "MCP_PROXY_IDENTIFIER_URI" {
-  value       = "api://${data.azurerm_client_config.current.tenant_id}/${local.app_registration_name}"
+  value       = var.enable_entra_setup ? "api://${data.azurerm_client_config.current.tenant_id}/${var.entra_app_name}" : try("api://${var.existing_entra_config.client_id}", "")
   description = "Identifier URI for the MCP Proxy app registration"
 }

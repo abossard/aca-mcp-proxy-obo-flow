@@ -58,3 +58,36 @@ variable "container_apps_subnet_id" {
   type        = string
   default     = ""
 }
+
+# Entra ID / OBO Configuration Variables
+
+variable "enable_entra_setup" {
+  description = "Master switch to create Entra ID resources (App Registration, SP, Federated Credential). Set to true for 'Team M' (Dev/Full Auto). Set to false for 'Team J' (Prod/Pre-provisioned)."
+  type        = bool
+  default     = false
+}
+
+variable "entra_app_name" {
+  description = "The display name for the Entra ID App Registration. Only used if enable_entra_setup is true."
+  type        = string
+  default     = "mcp-proxy-app"
+}
+
+variable "downstream_api_permissions" {
+  description = "List of Application Permissions (App Roles) required for downstream APIs. Only used if enable_entra_setup is true."
+  type = list(object({
+    resource_app_id = string # e.g. "00000003-0000-0000-c000-000000000000" (Microsoft Graph)
+    role_ids        = list(string) # e.g. ["df021288-bdef-4463-88db-98f22de89214"] (User.Read.All)
+  }))
+  default = []
+}
+
+variable "existing_entra_config" {
+  description = "Configuration for pre-provisioned Entra ID resources. Required if enable_entra_setup is false."
+  type = object({
+    client_id = string
+    tenant_id = string
+    object_id = string # Service Principal Object ID (for future use if needed)
+  })
+  default = null
+}

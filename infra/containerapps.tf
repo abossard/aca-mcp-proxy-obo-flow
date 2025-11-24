@@ -5,7 +5,13 @@ locals {
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.app_insights.connection_string
     API_ENDPOINT                          = "https://api.${azurerm_container_app_environment.cae.default_domain}"
     ASPNETCORE_ENVIRONMENT                = "Development"
+    # Inject Entra ID Config for OBO/Trusted Subsystem
+    ENTRA_CLIENT_ID = local.entra_client_id
   }
+
+  # Determine Entra ID Config based on setup mode
+  entra_client_id = var.enable_entra_setup ? azuread_application.mcp_proxy[0].client_id : try(var.existing_entra_config.client_id, "")
+  entra_app_uri   = var.enable_entra_setup ? "api://${data.azurerm_client_config.current.tenant_id}/${var.entra_app_name}" : try("api://${var.existing_entra_config.client_id}", "") # Assuming standard URI format for existing apps, or add a var for it
 }
 
 resource "azurerm_container_app" "api" {
@@ -78,11 +84,11 @@ resource "azapi_resource" "api_auth_config" {
           enabled = true
           registration = {
             openIdIssuer = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
-            clientId     = azuread_application.mcp_proxy.client_id
+            clientId     = local.entra_client_id
           }
           validation = {
             allowedAudiences = [
-              "api://${data.azurerm_client_config.current.tenant_id}/${local.app_registration_name}"
+              local.entra_app_uri
             ]
           }
         }
@@ -91,7 +97,7 @@ resource "azapi_resource" "api_auth_config" {
   }
 
   depends_on = [
-    azurerm_container_app.api,
-    azuread_application.mcp_proxy
+    azurerm_container_app.api
+    # Removed explicit dependency on azuread_application.mcp_proxy as it might not exist
   ]
 }
