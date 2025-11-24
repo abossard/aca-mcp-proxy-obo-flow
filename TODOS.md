@@ -31,13 +31,26 @@ This is only reasearch and documentation, no implementation needed.
 
 # [ ] 5. Configuration: Target Scope and OBO Exchange Function, configurable (API Scopes, App Registrations, Permissions, Admin Consent)
 
-# [ ] 6. Readme file for the setup (e.g. based on the Terraform IaC)
+- confirmed to be real user tokens!
+- see ![alt text](image.png)
+- add configuration for JWT authentication (AzAPI)
+
+# [✅] 6. Readme file for the setup (e.g. based on the Terraform IaC)
 
 Team J:
 
 # [ ] 7. Integrate with Azure DevOps
 
-# [ ] 8. (MCP Authentication Flow: JWT vs MCP Auth)
+# [ ] 7.1 Split the repositories
 
+# [ ] 7.2 Build the pipelines
 
-![alt text](image.png)
+Team J other teams:
+
+# [ ] 8. OBO Flow Setup
+
+# [ ] 8.1 From ChatJTI to AIGW (alternative, it might connect directlty to MCP Proxy)
+
+# [ ] 8.2 AIGW to MCP Proxy (optional, if 8.1 alt is implemented)
+
+# [ ] 8.3 from MCP Proxy to APIM OBO with SuccessFactors (critical part)
