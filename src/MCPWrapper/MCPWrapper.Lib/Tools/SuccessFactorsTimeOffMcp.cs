@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
+using MCPWrapper.Lib.Adapter;
 using MCPWrapper.Lib.Config;
 
 namespace MCPWrapper.Lib.Tools;
