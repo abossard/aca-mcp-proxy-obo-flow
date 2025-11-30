@@ -107,6 +107,9 @@ Access at `http://localhost:5000` (or check console output for port)
 📂 aca-mcp-proxy-obo-flow/
 ├── 📂 .github/
 │   └── copilot-instructions.md    # 🤖 AI agent guidance
+├── 📂 docs/
+│   ├── obo-implementation-plan.md # 📋 OBO flow design
+│   └── networking.md              # 🌐 Network architecture
 ├── 📂 infra/                       # 🏗️ Terraform IaC
 │   ├── identity.tf                 # 🔐 Managed Identity + Entra ID
 │   ├── containerapps.tf            # 🔵 Container App + Auth config
@@ -114,10 +117,18 @@ Access at `http://localhost:5000` (or check console output for port)
 │   ├── rbac.tf                     # 👥 Role assignments
 │   └── provider.tf                 # ⚙️ Provider configuration
 ├── 📂 src/MCPWrapper/
-│   └── MCPWrapper.Api/             # 💻 .NET 9 API
-│       ├── Program.cs              # 🎯 Minimal API with AOT
-│       ├── Dockerfile              # 🐳 Multi-stage build
-│       └── MCPWrapper.Api.csproj   # 📦 Project config
+│   ├── MCPWrapper.Api/             # 💻 .NET 9 API
+│   │   ├── Auth/                   # 🔐 OBO authentication
+│   │   │   ├── OnBehalfOfTokenService.cs
+│   │   │   └── SuccessFactorsAuthHandler.cs
+│   │   ├── Program.cs              # 🎯 Minimal API with AOT
+│   │   ├── Dockerfile              # 🐳 Multi-stage build
+│   │   └── MCPWrapper.Api.csproj   # 📦 Project config
+│   ├── MCPWrapper.Lib/             # 📚 Shared library
+│   │   ├── Config/                 # ⚙️ Configuration models
+│   │   ├── Tools/                  # 🔧 MCP tools
+│   │   └── Model/                  # 📝 Domain models
+│   └── MCPWrapper.Tests/           # 🧪 Integration tests
 └── azure.yaml                      # 🎛️ Azure Developer CLI config
 ```
 
@@ -128,16 +139,59 @@ Access at `http://localhost:5000` (or check console output for port)
 - **EasyAuth** - authentication at platform level (no code changes needed)
 - **Managed identities** - for ACR pull and future Azure service access
 - **Entra ID integration** - enterprise identity provider
+- **On-Behalf-Of (OBO) flow** - secure token exchange for downstream APIs
 
 ### ⚡ Performance
 - **Native AOT compilation** - faster startup, lower memory
 - **Slim builder** - minimal runtime footprint
 - **Container-optimized** - efficient image layers
+- **Token caching** - in-memory cache with automatic expiration
 
 ### 🔧 Developer Experience
 - **Azure Developer CLI** - simplified deployment workflow
 - **Infrastructure as Code** - reproducible environments
 - **Application Insights** - built-in observability
+
+## 🔄 On-Behalf-Of (OBO) Token Flow
+
+The MCP Proxy implements the OAuth 2.0 On-Behalf-Of flow to securely call downstream APIs (like SuccessFactors) using the caller's identity.
+
+```mermaid
+sequenceDiagram
+    participant Client as 🖥️ Client App
+    participant Proxy as 🔵 MCP Proxy
+    participant Entra as 🏢 Entra ID
+    participant SF as 📊 SuccessFactors
+
+    Client->>Entra: Authenticate (get token for Proxy)
+    Entra-->>Client: Access Token (audience: Proxy)
+    Client->>Proxy: API Call + Bearer Token
+    Note over Proxy: Validate incoming JWT
+    Proxy->>Entra: OBO Exchange (user assertion)
+    Entra-->>Proxy: Access Token (audience: SuccessFactors)
+    Proxy->>SF: API Call + Bearer Token
+    SF-->>Proxy: Response
+    Proxy-->>Client: Response
+```
+
+### OBO Configuration
+
+Configure the OBO flow in `appsettings.json`:
+
+```json
+{
+  "AzureAd": {
+    "TenantId": "<your-tenant-id>",
+    "ClientId": "<mcp-proxy-client-id>",
+    "ClientSecret": "<client-secret>",
+    "Audience": "api://<mcp-proxy-app-id>"
+  },
+  "SuccessFactors": {
+    "SuccessFactorsBaseUrl": "https://your-sf-instance.successfactors.com/odata/v2",
+    "DownstreamScope": "api://<successfactors-api-client-id>/.default"
+  }
+}
+```
 
 ## 🎯 Why AzAPI Provider?
 
