@@ -1,12 +1,8 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
-using System.Net.Http.Json;
-using System.Text.Json;
-using MCPWrapper.Lib.Model;
 using MCPWrapper.Lib.Config;
-using MCPWrapper.Lib.Extensions;
-using MCPWrapper.Lib.Adapter;
 
 namespace MCPWrapper.Lib.Tools;
 
@@ -15,9 +11,12 @@ public sealed class SuccessFactorsTimeOffMcp
 {
     private readonly SuccessFactorsTimeOffService service;
 
-    public SuccessFactorsTimeOffMcp(IHttpClientFactory httpClientFactory, IOptions<SuccessFactorsConfig> options)
+    public SuccessFactorsTimeOffMcp(
+        IHttpClientFactory httpClientFactory,
+        IOptions<SuccessFactorsConfig> options,
+        ILogger<SuccessFactorsTimeOffService> logger)
     {
-        this.service = new SuccessFactorsTimeOffService(httpClientFactory, options);
+        service = new SuccessFactorsTimeOffService(httpClientFactory, options, logger);
     }
 
     [McpServerTool, Description("Book time off for an employee.")]
