@@ -77,8 +77,8 @@ az containerapp logs show \
 ```
 
 Look for log messages like:
-- `Acquiring SuccessFactors token via OBO for scope {Scope}`
-- `Cached SuccessFactors token for {CacheDuration}`
+- `Acquiring SuccessFactors token via OBO for scope api://xxx/.default` (scope will be your configured downstream scope)
+- `Cached SuccessFactors token for 00:59:00.` (duration varies based on token expiration)
 
 #### Step 3.2: Test SuccessFactors Integration
 
