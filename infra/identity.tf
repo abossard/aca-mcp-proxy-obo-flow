@@ -162,8 +162,8 @@ resource "azuread_application_password" "mcp_proxy_secret" {
   application_id = azuread_application.mcp_proxy[0].id
   display_name   = "${var.environment_name}-obo-secret"
 
-  # Rotate every 6 months (180 days from now)
-  end_date = timeadd(timestamp(), "4320h")
+  # Secret expiration (configurable via variable)
+  end_date = timeadd(timestamp(), "${var.app_secret_expiry_hours}h")
 
   lifecycle {
     ignore_changes = [end_date]

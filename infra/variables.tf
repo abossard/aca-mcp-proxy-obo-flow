@@ -81,6 +81,12 @@ variable "create_app_secret" {
   default     = true
 }
 
+variable "app_secret_expiry_hours" {
+  description = "Number of hours until the client secret expires. Default is 4320 hours (180 days / 6 months). Set to 8760 for 1 year."
+  type        = number
+  default     = 4320
+}
+
 variable "known_client_applications" {
   description = "List of client application IDs that are pre-authorized to access the MCP Proxy API. These clients can use OBO flow without additional consent."
   type        = list(string)
