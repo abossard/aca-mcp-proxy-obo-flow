@@ -238,12 +238,30 @@ This project supports two distinct deployment models to accommodate different or
 In this mode, Terraform manages **everything**:
 - Azure Infrastructure (Container Apps, ACR, etc.)
 - **Entra ID Resources** (App Registration, Service Principal, Federated Credentials)
-- **Admin Consent** (via API calls in Terraform)
+- **OAuth2 Permission Scopes** for OBO flow
+- **Downstream API App Registration** (optional mock for testing)
+- **Client Secret** for OBO token exchange
 
 **Configuration:**
 ```hcl
-enable_entra_setup = true
-entra_app_name     = "mcp-proxy-dev"
+enable_entra_setup    = true
+entra_app_name        = "mcp-proxy-dev"
+create_app_secret     = true   # Create client secret for OBO
+
+# Optional: Create a mock downstream API for testing OBO
+downstream_api_name   = "successfactors-api"
+
+# Optional: Pre-authorize client apps for OBO
+known_client_applications = ["<client-app-id>"]
+
+# Optional: Request Microsoft Graph permissions
+downstream_api_permissions = [
+  {
+    resource_app_id            = "00000003-0000-0000-c000-000000000000"  # Microsoft Graph
+    delegated_permission_ids   = ["e1fe6dd8-ba31-4d61-89e7-88639da4683d"] # User.Read
+    application_permission_ids = []
+  }
+]
 ```
 
 ### Scenario B: Pre-Provisioned Identity ("Team J" / Production)
@@ -262,6 +280,18 @@ existing_entra_config = {
   object_id = "00000000-0000-0000-0000-000000000000" # Service Principal Object ID
 }
 ```
+
+### 🔑 OBO Configuration Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `enable_entra_setup` | `false` | Master switch to create Entra ID resources |
+| `entra_app_name` | `"mcp-proxy-app"` | Display name for the MCP Proxy app registration |
+| `create_app_secret` | `true` | Whether to create a client secret for OBO |
+| `downstream_api_name` | `""` | Name for optional downstream API registration |
+| `known_client_applications` | `[]` | Client app IDs pre-authorized for OBO |
+| `grant_graph_permissions` | `false` | Whether to grant Microsoft Graph permissions |
+| `graph_delegated_permissions` | `["User.Read", ...]` | Graph permissions to grant |
 
 ### 🌐 Networking Options
 
@@ -285,6 +315,16 @@ The container app automatically receives:
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Telemetry endpoint | Terraform output |
 | `API_ENDPOINT` | Container app URL | Computed |
 | `ASPNETCORE_ENVIRONMENT` | Runtime environment | Configuration |
+
+When `enable_entra_setup = true`, additional OBO-related variables are injected:
+
+| Variable | Description |
+|----------|-------------|
+| `AzureAd__TenantId` | Entra ID tenant ID |
+| `AzureAd__ClientId` | MCP Proxy app client ID |
+| `AzureAd__ClientSecret` | Client secret for OBO |
+| `AzureAd__Audience` | App identifier URI |
+| `SuccessFactors__DownstreamScope` | Downstream API scope for OBO |
 
 ## 🤝 Contributing
 

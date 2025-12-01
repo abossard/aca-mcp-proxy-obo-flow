@@ -9,6 +9,18 @@ locals {
     ENTRA_CLIENT_ID = local.entra_client_id
   }
 
+  # OBO-specific environment variables (only when Entra setup is enabled)
+  obo_env_vars = var.enable_entra_setup ? {
+    # Azure AD configuration for OBO token exchange
+    AzureAd__TenantId     = data.azurerm_client_config.current.tenant_id
+    AzureAd__ClientId     = azuread_application.mcp_proxy[0].client_id
+    AzureAd__ClientSecret = var.create_app_secret ? azuread_application_password.mcp_proxy_secret[0].value : ""
+    AzureAd__Audience     = "api://${data.azurerm_client_config.current.tenant_id}/${var.entra_app_name}"
+
+    # Downstream API scope for OBO (if downstream API is created)
+    SuccessFactors__DownstreamScope = var.downstream_api_name != "" ? "api://${data.azurerm_client_config.current.tenant_id}/${var.downstream_api_name}/.default" : ""
+  } : {}
+
   # Determine Entra ID Config based on setup mode
   entra_client_id = var.enable_entra_setup ? azuread_application.mcp_proxy[0].client_id : try(var.existing_entra_config.client_id, "")
   entra_app_uri   = var.enable_entra_setup ? "api://${data.azurerm_client_config.current.tenant_id}/${var.entra_app_name}" : try("api://${var.existing_entra_config.client_id}", "") # Assuming standard URI format for existing apps, or add a var for it
@@ -51,6 +63,15 @@ resource "azurerm_container_app" "api" {
 
       dynamic "env" {
         for_each = local.common_env_vars
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
+      # OBO-specific environment variables
+      dynamic "env" {
+        for_each = local.obo_env_vars
         content {
           name  = env.key
           value = env.value

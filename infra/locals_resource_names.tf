@@ -7,7 +7,7 @@ locals {
 
   # Container App Environment
   container_app_environment_name = coalesce(var.container_app_environment_name, "caev2-${var.environment_name}")
-  
+
   # CAE Infrastructure Resource Group Name
   cae_infra_rg_name = coalesce(var.infrastructure_resource_group_name, "${local.resource_group_name}-cae-infra")
 

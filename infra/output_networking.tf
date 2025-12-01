@@ -34,14 +34,14 @@ output "NETWORKING_PATTERN" {
 
 output "NETWORKING_DECISION_SUMMARY" {
   value = {
-    pattern                   = local.enable_vnet_integration && local.enable_private_endpoint ? "Zero Trust (VNet + Private Endpoint)" : (local.enable_vnet_integration ? "VNet Integration Only" : (local.enable_private_endpoint ? "Private Endpoint Only" : "Default (Public)"))
-    public_network_enabled    = local.public_network_access_enabled
-    vnet_integration_enabled  = local.enable_vnet_integration
-    private_endpoint_enabled  = local.enable_private_endpoint
-    dummy_vnet_created        = var.create_dummy_vnet
+    pattern                      = local.enable_vnet_integration && local.enable_private_endpoint ? "Zero Trust (VNet + Private Endpoint)" : (local.enable_vnet_integration ? "VNet Integration Only" : (local.enable_private_endpoint ? "Private Endpoint Only" : "Default (Public)"))
+    public_network_enabled       = local.public_network_access_enabled
+    vnet_integration_enabled     = local.enable_vnet_integration
+    private_endpoint_enabled     = local.enable_private_endpoint
+    dummy_vnet_created           = var.create_dummy_vnet
     can_access_private_resources = local.enable_vnet_integration
-    secure_inbound            = local.enable_private_endpoint
-    egress_control_available  = local.enable_vnet_integration
+    secure_inbound               = local.enable_private_endpoint
+    egress_control_available     = local.enable_vnet_integration
   }
   description = "Complete summary of networking decisions and capabilities"
 }
@@ -129,10 +129,10 @@ output "DUMMY_VNET_ADDRESS_SPACE" {
 output "ACCESS_INSTRUCTIONS" {
   value = local.enable_private_endpoint ? (
     "Private endpoint enabled. Access from VNet:\n  1. Ensure you're connected to VNet ${local.enable_private_endpoint ? local.resolved_pe_vnet_id : "N/A"}\n  2. DNS should resolve ${azurerm_container_app.api.ingress[0].fqdn} to ${local.enable_private_endpoint ? azurerm_private_endpoint.aca[0].private_service_connection[0].private_ip_address : "N/A"}\n  3. Use: curl https://${azurerm_container_app.api.ingress[0].fqdn}"
-  ) : (
+    ) : (
     local.public_network_access_enabled ? (
       "Public access enabled. Access from anywhere:\n  curl https://${azurerm_container_app.api.ingress[0].fqdn}"
-    ) : (
+      ) : (
       "Public access disabled but no private endpoint. Apps only accessible internally within Container Apps environment."
     )
   )
