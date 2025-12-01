@@ -59,27 +59,66 @@ variable "container_apps_subnet_id" {
   default     = ""
 }
 
+# ==============================================================================
 # Entra ID / OBO Configuration Variables
+# ==============================================================================
 
 variable "enable_entra_setup" {
   description = "Master switch to create Entra ID resources (App Registration, SP, Federated Credential). Set to true for 'Team M' (Dev/Full Auto). Set to false for 'Team J' (Prod/Pre-provisioned)."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "entra_app_name" {
-  description = "The display name for the Entra ID App Registration. Only used if enable_entra_setup is true."
+  description = "The display name for the MCP Proxy Entra ID App Registration. Only used if enable_entra_setup is true."
   type        = string
   default     = "mcp-proxy-app"
 }
 
+variable "create_app_secret" {
+  description = "Whether to create a client secret for the MCP Proxy app registration. Required for OBO token exchange. Set to false if using managed identity assertion instead."
+  type        = bool
+  default     = true
+}
+
+variable "app_secret_expiry_hours" {
+  description = "Number of hours until the client secret expires. Default is 4320 hours (180 days / 6 months). Set to 8760 for 1 year."
+  type        = number
+  default     = 4320
+}
+
+variable "known_client_applications" {
+  description = "List of client application IDs that are pre-authorized to access the MCP Proxy API. These clients can use OBO flow without additional consent."
+  type        = list(string)
+  default     = []
+}
+
+variable "downstream_api_name" {
+  description = "Display name for the downstream API app registration (e.g., 'successfactors-api'). If empty, no downstream API registration is created. Use this to create a mock downstream API for testing OBO flow."
+  type        = string
+  default     = ""
+}
+
 variable "downstream_api_permissions" {
-  description = "List of Application Permissions (App Roles) required for downstream APIs. Only used if enable_entra_setup is true."
+  description = "List of permissions required for downstream APIs. Supports both delegated (Scope) and application (Role) permissions. Only used if enable_entra_setup is true."
   type = list(object({
-    resource_app_id = string # e.g. "00000003-0000-0000-c000-000000000000" (Microsoft Graph)
-    role_ids        = list(string) # e.g. ["df021288-bdef-4463-88db-98f22de89214"] (User.Read.All)
+    resource_app_id            = string       # e.g. "00000003-0000-0000-c000-000000000000" (Microsoft Graph)
+    delegated_permission_ids   = list(string) # e.g. ["e1fe6dd8-ba31-4d61-89e7-88639da4683d"] (User.Read)
+    application_permission_ids = list(string) # e.g. ["df021288-bdef-4463-88db-98f22de89214"] (User.Read.All)
   }))
   default = []
+}
+
+variable "grant_graph_permissions" {
+  description = "Whether to grant delegated permissions for Microsoft Graph. Requires admin consent."
+  type        = bool
+  default     = false
+}
+
+variable "graph_delegated_permissions" {
+  description = "List of Microsoft Graph delegated permission claim values to grant (e.g., ['User.Read', 'openid', 'profile']). Only used if grant_graph_permissions is true."
+  type        = list(string)
+  default     = ["User.Read", "openid", "profile", "email"]
 }
 
 variable "existing_entra_config" {

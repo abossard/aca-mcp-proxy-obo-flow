@@ -3,6 +3,7 @@
 using System.Text.Json;
 using MCPWrapper.Lib.Adapter;
 using MCPWrapper.Lib.Tools;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 public class IntegrationTest : IntegrationTestBase
@@ -14,7 +15,8 @@ public class IntegrationTest : IntegrationTestBase
 
         var service = new SuccessFactorsTimeOffService(
             GetHttpClientFactory(),
-            Options.Create(GetSuccessFactorsConfig()));
+            Options.Create(GetSuccessFactorsConfig()),
+            NullLogger<SuccessFactorsTimeOffService>.Instance);
 
         var result = await service.BookTimeOff(userId, DateTime.UtcNow.AddDays(5), DateTime.UtcNow.AddDays(15));
 
