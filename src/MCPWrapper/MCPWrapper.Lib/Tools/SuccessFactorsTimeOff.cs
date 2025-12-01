@@ -1,6 +1,5 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ModelContextProtocol.Server;
-using System.ComponentModel;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MCPWrapper.Lib.Model;
@@ -14,11 +13,16 @@ public sealed class SuccessFactorsTimeOffService
 {
     private readonly IHttpClientFactory httpClientFactory;
     private readonly SuccessFactorsConfig config;
+    private readonly ILogger<SuccessFactorsTimeOffService> logger;
 
-    public SuccessFactorsTimeOffService(IHttpClientFactory httpClientFactory, IOptions<SuccessFactorsConfig> options)
+    public SuccessFactorsTimeOffService(
+        IHttpClientFactory httpClientFactory,
+        IOptions<SuccessFactorsConfig> options,
+        ILogger<SuccessFactorsTimeOffService> logger)
     {
         this.httpClientFactory = httpClientFactory;
         this.config = options.Value;
+        this.logger = logger;
     }
 
     public async Task<BookTimeOffResponse> BookTimeOff(
@@ -64,11 +68,10 @@ public sealed class SuccessFactorsTimeOffService
             }
         };
 
-        //Console.WriteLine($"Payload for BookTimeOff: {JsonSerializer.Serialize(payload)}");
+        logger.LogInformation("Booking time off for {UserId} from {Start} to {End} (ExternalCode: {ExternalCode})", userId, startDateSap, endDateSap, externalCode);
 
-        var httpClient = httpClientFactory.CreateClient();
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
-        var response = await httpClient.PostAsJsonAsync<BookTimeOffRequest>(
+        var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
+        var response = await httpClient.PostAsJsonAsync(
             $"{config.SuccessFactorsBaseUrl}/upsert?workflowConfirmed=true&$format=json",
             payload);
 
@@ -90,7 +93,6 @@ public sealed class SuccessFactorsTimeOffService
     {
 
         var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
 
         var filterParts = new List<string> { $"userId eq '{userId}'" };
         
@@ -116,6 +118,8 @@ public sealed class SuccessFactorsTimeOffService
                         $"&$orderby={orderBy}" +
                         $"&$format=json";
                         
+        logger.LogInformation("Listing time off requests for {UserId} with filters start={Start} end={End}", userId, startDateFilter, endDateFilter);
+
         var response = await httpClient.GetAsync(requestUrl);
         var responseContent = await response.Content.ReadAsStringAsync();
 
@@ -150,6 +154,8 @@ public sealed class SuccessFactorsTimeOffService
             }
             catch (JsonException ex)
             {
+                logger.LogWarning(ex, "Failed to parse SuccessFactors response body");
+
                 return new ListTimeOffResponse
                 {
                     StatusCode = (int)response.StatusCode,
@@ -174,11 +180,11 @@ public sealed class SuccessFactorsTimeOffService
         string externalCode)
     {
         var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
-        
+
         // Build the delete URL using the external code
         var deleteUrl = $"{config.SuccessFactorsBaseUrl}/EmployeeTime('{externalCode}')";
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+
+        logger.LogInformation("Deleting time off request {ExternalCode}", externalCode);
 
         var response = await httpClient.DeleteAsync(deleteUrl);
         var responseContent = await response.Content.ReadAsStringAsync();

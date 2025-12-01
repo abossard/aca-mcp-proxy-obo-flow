@@ -10,9 +10,16 @@ terraform {
       source  = "Azure/azapi"
       version = "~>2.7.0"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~>3.1.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~>3.6.0"
+    }
   }
 }
-
 
 provider "azapi" {
   # Configuration options
@@ -26,6 +33,14 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+}
+
+provider "azuread" {
+  # Uses same auth as azurerm by default
+}
+
+provider "random" {
+  # No configuration required
 }
 
 # Access client_id, tenant_id, subscription_id and object_id configuration values

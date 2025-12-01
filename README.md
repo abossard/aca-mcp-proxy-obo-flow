@@ -94,6 +94,25 @@ This will:
 
 ### 🧪 Local Development
 
+#### Setup Configuration
+
+First, run the setup script to extract Terraform outputs and configure your local environment:
+
+```bash
+./scripts/setup-local-config.sh
+```
+
+This will update `appsettings.Development.json` with the correct Azure AD and OBO settings.
+
+Alternatively, use environment variables:
+
+```bash
+./scripts/setup-local-config.sh --env-vars
+source .env.local
+```
+
+#### Run the App
+
 ```bash
 cd src/MCPWrapper/MCPWrapper.Api
 dotnet run
@@ -101,12 +120,17 @@ dotnet run
 
 Access at `http://localhost:5000` (or check console output for port)
 
+> 📝 **Note:** You must run `azd up` at least once before local development to provision the required Entra ID resources.
+
 ## 📁 Project Structure
 
 ```
 📂 aca-mcp-proxy-obo-flow/
 ├── 📂 .github/
 │   └── copilot-instructions.md    # 🤖 AI agent guidance
+├── 📂 docs/
+│   ├── obo-implementation-plan.md # 📋 OBO flow design
+│   └── networking.md              # 🌐 Network architecture
 ├── 📂 infra/                       # 🏗️ Terraform IaC
 │   ├── identity.tf                 # 🔐 Managed Identity + Entra ID
 │   ├── containerapps.tf            # 🔵 Container App + Auth config
@@ -114,10 +138,18 @@ Access at `http://localhost:5000` (or check console output for port)
 │   ├── rbac.tf                     # 👥 Role assignments
 │   └── provider.tf                 # ⚙️ Provider configuration
 ├── 📂 src/MCPWrapper/
-│   └── MCPWrapper.Api/             # 💻 .NET 9 API
-│       ├── Program.cs              # 🎯 Minimal API with AOT
-│       ├── Dockerfile              # 🐳 Multi-stage build
-│       └── MCPWrapper.Api.csproj   # 📦 Project config
+│   ├── MCPWrapper.Api/             # 💻 .NET 9 API
+│   │   ├── Auth/                   # 🔐 OBO authentication
+│   │   │   ├── OnBehalfOfTokenService.cs
+│   │   │   └── SuccessFactorsAuthHandler.cs
+│   │   ├── Program.cs              # 🎯 Minimal API with AOT
+│   │   ├── Dockerfile              # 🐳 Multi-stage build
+│   │   └── MCPWrapper.Api.csproj   # 📦 Project config
+│   ├── MCPWrapper.Lib/             # 📚 Shared library
+│   │   ├── Config/                 # ⚙️ Configuration models
+│   │   ├── Tools/                  # 🔧 MCP tools
+│   │   └── Model/                  # 📝 Domain models
+│   └── MCPWrapper.Tests/           # 🧪 Integration tests
 └── azure.yaml                      # 🎛️ Azure Developer CLI config
 ```
 
@@ -128,16 +160,59 @@ Access at `http://localhost:5000` (or check console output for port)
 - **EasyAuth** - authentication at platform level (no code changes needed)
 - **Managed identities** - for ACR pull and future Azure service access
 - **Entra ID integration** - enterprise identity provider
+- **On-Behalf-Of (OBO) flow** - secure token exchange for downstream APIs
 
 ### ⚡ Performance
 - **Native AOT compilation** - faster startup, lower memory
 - **Slim builder** - minimal runtime footprint
 - **Container-optimized** - efficient image layers
+- **Token caching** - in-memory cache with automatic expiration
 
 ### 🔧 Developer Experience
 - **Azure Developer CLI** - simplified deployment workflow
 - **Infrastructure as Code** - reproducible environments
 - **Application Insights** - built-in observability
+
+## 🔄 On-Behalf-Of (OBO) Token Flow
+
+The MCP Proxy implements the OAuth 2.0 On-Behalf-Of flow to securely call downstream APIs (like SuccessFactors) using the caller's identity.
+
+```mermaid
+sequenceDiagram
+    participant Client as 🖥️ Client App
+    participant Proxy as 🔵 MCP Proxy
+    participant Entra as 🏢 Entra ID
+    participant SF as 📊 SuccessFactors
+
+    Client->>Entra: Authenticate (get token for Proxy)
+    Entra-->>Client: Access Token (audience: Proxy)
+    Client->>Proxy: API Call + Bearer Token
+    Note over Proxy: Validate incoming JWT
+    Proxy->>Entra: OBO Exchange (user assertion)
+    Entra-->>Proxy: Access Token (audience: SuccessFactors)
+    Proxy->>SF: API Call + Bearer Token
+    SF-->>Proxy: Response
+    Proxy-->>Client: Response
+```
+
+### OBO Configuration
+
+Configure the OBO flow in `appsettings.json`:
+
+```json
+{
+  "AzureAd": {
+    "TenantId": "<your-tenant-id>",
+    "ClientId": "<mcp-proxy-client-id>",
+    "ClientSecret": "<client-secret>",
+    "Audience": "api://<mcp-proxy-app-id>"
+  },
+  "SuccessFactors": {
+    "SuccessFactorsBaseUrl": "https://your-sf-instance.successfactors.com/odata/v2",
+    "DownstreamScope": "api://<successfactors-api-client-id>/.default"
+  }
+}
+```
 
 ## 🎯 Why AzAPI Provider?
 
@@ -184,12 +259,30 @@ This project supports two distinct deployment models to accommodate different or
 In this mode, Terraform manages **everything**:
 - Azure Infrastructure (Container Apps, ACR, etc.)
 - **Entra ID Resources** (App Registration, Service Principal, Federated Credentials)
-- **Admin Consent** (via API calls in Terraform)
+- **OAuth2 Permission Scopes** for OBO flow
+- **Downstream API App Registration** (optional mock for testing)
+- **Client Secret** for OBO token exchange
 
 **Configuration:**
 ```hcl
-enable_entra_setup = true
-entra_app_name     = "mcp-proxy-dev"
+enable_entra_setup    = true
+entra_app_name        = "mcp-proxy-dev"
+create_app_secret     = true   # Create client secret for OBO
+
+# Optional: Create a mock downstream API for testing OBO
+downstream_api_name   = "successfactors-api"
+
+# Optional: Pre-authorize client apps for OBO
+known_client_applications = ["<client-app-id>"]
+
+# Optional: Request Microsoft Graph permissions
+downstream_api_permissions = [
+  {
+    resource_app_id            = "00000003-0000-0000-c000-000000000000"  # Microsoft Graph
+    delegated_permission_ids   = ["e1fe6dd8-ba31-4d61-89e7-88639da4683d"] # User.Read
+    application_permission_ids = []
+  }
+]
 ```
 
 ### Scenario B: Pre-Provisioned Identity ("Team J" / Production)
@@ -208,6 +301,18 @@ existing_entra_config = {
   object_id = "00000000-0000-0000-0000-000000000000" # Service Principal Object ID
 }
 ```
+
+### 🔑 OBO Configuration Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `enable_entra_setup` | `false` | Master switch to create Entra ID resources |
+| `entra_app_name` | `"mcp-proxy-app"` | Display name for the MCP Proxy app registration |
+| `create_app_secret` | `true` | Whether to create a client secret for OBO |
+| `downstream_api_name` | `""` | Name for optional downstream API registration |
+| `known_client_applications` | `[]` | Client app IDs pre-authorized for OBO |
+| `grant_graph_permissions` | `false` | Whether to grant Microsoft Graph permissions |
+| `graph_delegated_permissions` | `["User.Read", ...]` | Graph permissions to grant |
 
 ### 🌐 Networking Options
 
@@ -231,6 +336,16 @@ The container app automatically receives:
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Telemetry endpoint | Terraform output |
 | `API_ENDPOINT` | Container app URL | Computed |
 | `ASPNETCORE_ENVIRONMENT` | Runtime environment | Configuration |
+
+When `enable_entra_setup = true`, additional OBO-related variables are injected:
+
+| Variable | Description |
+|----------|-------------|
+| `AzureAd__TenantId` | Entra ID tenant ID |
+| `AzureAd__ClientId` | MCP Proxy app client ID |
+| `AzureAd__ClientSecret` | Client secret for OBO |
+| `AzureAd__Audience` | App identifier URI |
+| `SuccessFactors__DownstreamScope` | Downstream API scope for OBO |
 
 ## 🤝 Contributing
 

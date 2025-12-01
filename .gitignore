@@ -486,4 +486,7 @@ infra/.terraform.lock.hcl
 
 appsettings.local.json
 appsettings.Development.json
+appsettings.Development.json.backup
+.env.local
 .terraform
+src/MCPWrapper/MCPWrapper.Api/appsettings.Development.json

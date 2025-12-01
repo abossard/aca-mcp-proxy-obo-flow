@@ -29,11 +29,17 @@ This is only reasearch and documentation, no implementation needed.
 - add variables to configure the private link, e.g. subnet id if it's empty, don't use private link
 - add another variable: create dummy vnet/subnet (default: false). If true, create a new vnet and subnet for the private endpoint
 
-# [ ] 5. Configuration: Target Scope and OBO Exchange Function, configurable (API Scopes, App Registrations, Permissions, Admin Consent)
+# [✅] 5. Configuration: Target Scope and OBO Exchange Function, configurable (API Scopes, App Registrations, Permissions, Admin Consent)
 
 - confirmed to be real user tokens!
 - see ![alt text](docs/obo_flow.png)
 - add configuration for JWT authentication (AzAPI)
+
+**Implementation Summary:**
+- JWT Bearer authentication configured in `Program.cs` with Azure AD validation
+- On-Behalf-Of token service (`OnBehalfOfTokenService`) with in-memory caching
+- HTTP handler (`SuccessFactorsAuthHandler`) automatically attaches downstream tokens
+- Configuration via `AzureAd` and `SuccessFactors` sections in appsettings.json
 
 # [✅] 6. Readme file for the setup (e.g. based on the Terraform IaC)
 

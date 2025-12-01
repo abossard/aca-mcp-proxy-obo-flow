@@ -1,8 +1,8 @@
 locals {
-  tags                      = var.add_azd_tags ? { azd-env-name : var.environment_name } : {}
-  sha                       = base64encode(sha256("${var.environment_name}${var.location}${data.azurerm_client_config.current.subscription_id}"))
-  resource_token            = substr(replace(lower(local.sha), "[^A-Za-z0-9_]", ""), 0, 13)
-  role_assignment_namespace = "e4c4a0c3-5e5e-4a78-b110-ba1a51c0c638" # Fixed namespace UUID
+  tags                                            = var.add_azd_tags ? { azd-env-name : var.environment_name } : {}
+  sha                                             = base64encode(sha256("${var.environment_name}${var.location}${data.azurerm_client_config.current.subscription_id}"))
+  resource_token                                  = substr(replace(lower(local.sha), "[^A-Za-z0-9_]", ""), 0, 13)
+  role_assignment_namespace                       = "e4c4a0c3-5e5e-4a78-b110-ba1a51c0c638" # Fixed namespace UUID
   container_app_environment_workload_profile_name = "Consumption"
 }
 
@@ -31,14 +31,14 @@ resource "azurerm_container_registry" "acr" {
 }
 
 resource "azurerm_container_app_environment" "cae" {
-  name                       = local.container_app_environment_name
-  location                   = azurerm_resource_group.rg.location
-  resource_group_name        = azurerm_resource_group.rg.name
+  name                               = local.container_app_environment_name
+  location                           = azurerm_resource_group.rg.location
+  resource_group_name                = azurerm_resource_group.rg.name
   infrastructure_resource_group_name = local.cae_infra_rg_name
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
-  infrastructure_subnet_id   = local.enable_vnet_integration ? local.resolved_cae_subnet_id : null
+  log_analytics_workspace_id         = azurerm_log_analytics_workspace.law.id
+  infrastructure_subnet_id           = local.enable_vnet_integration ? local.resolved_cae_subnet_id : null
 
-  tags                       = local.tags
+  tags = local.tags
 
   # Workload profiles environment (v2) - supports both consumption and dedicated plans
   workload_profile {
