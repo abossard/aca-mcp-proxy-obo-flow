@@ -94,12 +94,33 @@ This will:
 
 ### 🧪 Local Development
 
+#### Setup Configuration
+
+First, run the setup script to extract Terraform outputs and configure your local environment:
+
+```bash
+./scripts/setup-local-config.sh
+```
+
+This will update `appsettings.Development.json` with the correct Azure AD and OBO settings.
+
+Alternatively, use environment variables:
+
+```bash
+./scripts/setup-local-config.sh --env-vars
+source .env.local
+```
+
+#### Run the App
+
 ```bash
 cd src/MCPWrapper/MCPWrapper.Api
 dotnet run
 ```
 
 Access at `http://localhost:5000` (or check console output for port)
+
+> 📝 **Note:** You must run `azd up` at least once before local development to provision the required Entra ID resources.
 
 ## 📁 Project Structure
 

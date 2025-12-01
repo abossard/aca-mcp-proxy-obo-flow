@@ -66,7 +66,7 @@ variable "container_apps_subnet_id" {
 variable "enable_entra_setup" {
   description = "Master switch to create Entra ID resources (App Registration, SP, Federated Credential). Set to true for 'Team M' (Dev/Full Auto). Set to false for 'Team J' (Prod/Pre-provisioned)."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "entra_app_name" {
