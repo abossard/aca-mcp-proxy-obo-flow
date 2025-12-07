@@ -18,8 +18,9 @@ resource "azuread_application" "mcp_proxy" {
   display_name = var.entra_app_name
 
   # API exposure - defines this app as a resource server
-  identifier_uris = ["api://${data.azurerm_client_config.current.tenant_id}/${var.entra_app_name}"]
-
+  # Note: identifier_uris will be set to api://{application_id} after creation
+  # Terraform will auto-set this on first apply
+  
   # Enable OAuth2 implicit flow if needed for SPA/testing
   web {
     # Container App authentication redirect URIs

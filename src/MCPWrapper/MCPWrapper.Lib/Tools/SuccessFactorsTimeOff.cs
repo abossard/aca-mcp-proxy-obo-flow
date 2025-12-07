@@ -7,6 +7,7 @@ using MCPWrapper.Lib.Model;
 using MCPWrapper.Lib.Config;
 using MCPWrapper.Lib.Extensions;
 using MCPWrapper.Lib.Adapter;
+using Microsoft.Extensions.Logging;
 
 namespace MCPWrapper.Lib.Tools;
 
@@ -14,17 +15,23 @@ public sealed class SuccessFactorsTimeOffService
 {
     private readonly IHttpClientFactory httpClientFactory;
     private readonly SuccessFactorsConfig config;
+    private readonly ILogger<SuccessFactorsTimeOffService> logger;
 
-    public SuccessFactorsTimeOffService(IHttpClientFactory httpClientFactory, IOptions<SuccessFactorsConfig> options)
+    public SuccessFactorsTimeOffService(
+        IHttpClientFactory httpClientFactory, 
+        IOptions<SuccessFactorsConfig> options,
+        ILogger<SuccessFactorsTimeOffService> logger)
     {
         this.httpClientFactory = httpClientFactory;
         this.config = options.Value;
+        this.logger = logger;
     }
 
     public async Task<BookTimeOffResponse> BookTimeOff(
         string userId,
         DateTime startDate,
-        DateTime endDate)
+        DateTime endDate,
+        string? oboToken = null)
     {
         var externalCode = $"REQ_{Guid.NewGuid():N}"[..15]; // Limit to 12 chars like Python example
 
@@ -67,7 +74,23 @@ public sealed class SuccessFactorsTimeOffService
         //Console.WriteLine($"Payload for BookTimeOff: {JsonSerializer.Serialize(payload)}");
 
         var httpClient = httpClientFactory.CreateClient();
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+        
+        // Use OBO token if available, otherwise fall back to API key
+        if (!string.IsNullOrEmpty(oboToken))
+        {
+            logger.LogInformation("Using OBO token for SuccessFactors API call");
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", oboToken);
+        }
+        else if (!string.IsNullOrEmpty(config.ApiKey))
+        {
+            logger.LogInformation("Using API key for SuccessFactors API call");
+            httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+        }
+        else
+        {
+            logger.LogWarning("No authentication method available for SuccessFactors API call");
+        }
+        
         var response = await httpClient.PostAsJsonAsync<BookTimeOffRequest>(
             $"{config.SuccessFactorsBaseUrl}/upsert?workflowConfirmed=true&$format=json",
             payload);
@@ -86,11 +109,27 @@ public sealed class SuccessFactorsTimeOffService
     public async Task<ListTimeOffResponse> ListTimeOffRequests(
         string userId,
         DateTime? startDateFilter = null,
-        DateTime? endDateFilter = null)
+        DateTime? endDateFilter = null,
+        string? oboToken = null)
     {
 
         var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+        
+        // Use OBO token if available, otherwise fall back to API key
+        if (!string.IsNullOrEmpty(oboToken))
+        {
+            logger.LogInformation("Using OBO token for SuccessFactors API call");
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", oboToken);
+        }
+        else if (!string.IsNullOrEmpty(config.ApiKey))
+        {
+            logger.LogInformation("Using API key for SuccessFactors API call");
+            httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+        }
+        else
+        {
+            logger.LogWarning("No authentication method available for SuccessFactors API call");
+        }
 
         var filterParts = new List<string> { $"userId eq '{userId}'" };
         
@@ -171,14 +210,29 @@ public sealed class SuccessFactorsTimeOffService
     
 
     public async Task<DeleteTimeOffResponse> DeleteTimeOffRequest(
-        string externalCode)
+        string externalCode,
+        string? oboToken = null)
     {
         var httpClient = httpClientFactory.CreateClient("SuccessFactorsApi");
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
         
         // Build the delete URL using the external code
         var deleteUrl = $"{config.SuccessFactorsBaseUrl}/EmployeeTime('{externalCode}')";
-        httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+        
+        // Use OBO token if available, otherwise fall back to API key
+        if (!string.IsNullOrEmpty(oboToken))
+        {
+            logger.LogInformation("Using OBO token for SuccessFactors API call");
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", oboToken);
+        }
+        else if (!string.IsNullOrEmpty(config.ApiKey))
+        {
+            logger.LogInformation("Using API key for SuccessFactors API call");
+            httpClient.DefaultRequestHeaders.Add("apikey", config.ApiKey);
+        }
+        else
+        {
+            logger.LogWarning("No authentication method available for SuccessFactors API call");
+        }
 
         var response = await httpClient.DeleteAsync(deleteUrl);
         var responseContent = await response.Content.ReadAsStringAsync();

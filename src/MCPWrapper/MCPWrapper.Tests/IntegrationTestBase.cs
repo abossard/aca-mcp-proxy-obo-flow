@@ -27,6 +27,18 @@ public class IntegrationTestBase
 
     protected IHttpClientFactory GetHttpClientFactory() => new TestHttpClientFactory();
 
+    protected Microsoft.Extensions.Logging.ILogger<T> GetLogger<T>() => new TestLogger<T>();
+
+    private sealed class TestLogger<T> : Microsoft.Extensions.Logging.ILogger<T>
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            Console.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+        }
+    }
+
     private sealed class TestHttpClientFactory : IHttpClientFactory, IDisposable
     {
         private readonly Lazy<HttpMessageHandler> handlerLazy = new (() => new HttpClientHandler());
