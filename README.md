@@ -228,9 +228,40 @@ The container app automatically receives:
 |----------|-------------|--------|
 | `AZURE_TENANT_ID` | Entra ID tenant | Auto-injected |
 | `AZURE_CLIENT_ID` | Managed identity client ID | Auto-injected |
+| `ENTRA_CLIENT_ID` | App registration client ID | Auto-injected |
+| `DOWNSTREAM_API_SCOPE` | Scope for OBO token exchange | Configuration |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Telemetry endpoint | Terraform output |
 | `API_ENDPOINT` | Container app URL | Computed |
 | `ASPNETCORE_ENVIRONMENT` | Runtime environment | Configuration |
+
+## 🔐 On-Behalf-Of (OBO) Token Flow
+
+This project implements the OAuth 2.0 On-Behalf-Of flow for secure token exchange:
+
+### Features
+- **JWT Bearer Authentication**: Validates incoming tokens from Entra ID
+- **OBO Token Exchange**: Exchanges user tokens for downstream API tokens
+- **Zero-Secrets**: Uses managed identity with federated credentials
+- **Flexible Fallback**: Falls back to API key if OBO is not configured
+
+### Configuration
+
+Set the `downstream_api_scope` variable in Terraform:
+
+```hcl
+downstream_api_scope = "https://graph.microsoft.com/.default"
+```
+
+For detailed implementation information, see [OBO Implementation Summary](docs/obo-implementation-summary.md).
+
+## 📊 Observability with OpenTelemetry
+
+Built-in observability using OpenTelemetry:
+
+- **Tracing**: ASP.NET Core and HTTP client instrumentation
+- **Metrics**: Request/response metrics and custom metrics
+- **Logging**: Structured logging with Application Insights
+- **Exporters**: Azure Monitor for production, Console for development
 
 ## 🤝 Contributing
 
