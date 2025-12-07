@@ -14,7 +14,8 @@ public class IntegrationTest : IntegrationTestBase
 
         var service = new SuccessFactorsTimeOffService(
             GetHttpClientFactory(),
-            Options.Create(GetSuccessFactorsConfig()));
+            Options.Create(GetSuccessFactorsConfig()),
+            GetLogger<SuccessFactorsTimeOffService>());
 
         var result = await service.BookTimeOff(userId, DateTime.UtcNow.AddDays(5), DateTime.UtcNow.AddDays(15));
 

@@ -39,16 +39,13 @@ var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CON
 if (!string.IsNullOrEmpty(appInsightsConnectionString))
 {
     builder.Services.AddOpenTelemetry()
-        .UseAzureMonitor(options =>
-        {
-            options.ConnectionString = appInsightsConnectionString;
-        });
-    builder.Logging.AddOpenTelemetry(logging =>
+        .WithTracing(tracing => tracing.AddOtlpExporter())
+        .WithMetrics(metrics => metrics.AddOtlpExporter());
+    
+    // Add Azure Monitor via Application Insights SDK
+    builder.Services.AddApplicationInsightsTelemetry(options =>
     {
-        logging.AddAzureMonitorLogExporter(options =>
-        {
-            options.ConnectionString = appInsightsConnectionString;
-        });
+        options.ConnectionString = appInsightsConnectionString;
     });
 }
 else
