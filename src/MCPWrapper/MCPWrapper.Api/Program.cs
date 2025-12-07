@@ -91,7 +91,8 @@ if (!string.IsNullOrEmpty(tenantId) && !string.IsNullOrEmpty(clientId))
         .AddJwtBearer(options =>
         {
             options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
-            options.Audience = $"api://{tenantId}/{clientId}";
+            // Use client ID as audience (standard Entra ID practice)
+            options.Audience = $"api://{clientId}";
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
