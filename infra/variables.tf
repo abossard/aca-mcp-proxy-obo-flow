@@ -91,3 +91,9 @@ variable "existing_entra_config" {
   })
   default = null
 }
+
+variable "downstream_api_scope" {
+  description = "The scope to request when exchanging tokens for the downstream API (e.g., 'api://your-api-app-id/.default' or 'https://graph.microsoft.com/.default'). Used for OBO token exchange."
+  type        = string
+  default     = ""
+}

@@ -6,7 +6,8 @@ locals {
     API_ENDPOINT                          = "https://api.${azurerm_container_app_environment.cae.default_domain}"
     ASPNETCORE_ENVIRONMENT                = "Development"
     # Inject Entra ID Config for OBO/Trusted Subsystem
-    ENTRA_CLIENT_ID = local.entra_client_id
+    ENTRA_CLIENT_ID         = local.entra_client_id
+    DOWNSTREAM_API_SCOPE    = var.downstream_api_scope
   }
 
   # Determine Entra ID Config based on setup mode

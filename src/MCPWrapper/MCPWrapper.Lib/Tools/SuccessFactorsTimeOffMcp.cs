@@ -7,6 +7,9 @@ using MCPWrapper.Lib.Model;
 using MCPWrapper.Lib.Config;
 using MCPWrapper.Lib.Extensions;
 using MCPWrapper.Lib.Adapter;
+using MCPWrapper.Lib.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace MCPWrapper.Lib.Tools;
 
@@ -14,10 +17,44 @@ namespace MCPWrapper.Lib.Tools;
 public sealed class SuccessFactorsTimeOffMcp
 {
     private readonly SuccessFactorsTimeOffService service;
+    private readonly ITokenService tokenService;
+    private readonly IHttpContextAccessor httpContextAccessor;
+    private readonly ILogger<SuccessFactorsTimeOffMcp> logger;
 
-    public SuccessFactorsTimeOffMcp(IHttpClientFactory httpClientFactory, IOptions<SuccessFactorsConfig> options)
+    public SuccessFactorsTimeOffMcp(
+        SuccessFactorsTimeOffService service,
+        ITokenService tokenService,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<SuccessFactorsTimeOffMcp> logger)
     {
-        this.service = new SuccessFactorsTimeOffService(httpClientFactory, options);
+        this.service = service;
+        this.tokenService = tokenService;
+        this.httpContextAccessor = httpContextAccessor;
+        this.logger = logger;
+    }
+
+    private async Task<string?> GetOboTokenAsync()
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+        if (httpContext == null)
+        {
+            logger.LogWarning("No HTTP context available for token extraction");
+            return null;
+        }
+
+        // Try to get the user token from the Authorization header
+        var authHeader = httpContext.Request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning("No Bearer token found in Authorization header");
+            return null;
+        }
+
+        var userToken = authHeader.Substring("Bearer ".Length).Trim();
+        logger.LogInformation("Extracted user token from Authorization header");
+
+        // Exchange the user token for an OBO token
+        return await tokenService.GetOboTokenAsync(userToken);
     }
 
     [McpServerTool, Description("Book time off for an employee.")]
@@ -26,7 +63,8 @@ public sealed class SuccessFactorsTimeOffMcp
         [Description("Start date of time off")] DateTime startDate,
         [Description("End date of time off")] DateTime endDate)
     {
-        return (await service.BookTimeOff(userId, startDate, endDate)).ToMcpView();
+        var oboToken = await GetOboTokenAsync();
+        return (await service.BookTimeOff(userId, startDate, endDate, oboToken)).ToMcpView();
     }
 
 
@@ -37,7 +75,8 @@ public sealed class SuccessFactorsTimeOffMcp
         [Description("Optional: Start date filter (inclusive) - only show requests starting on or after this date")] DateTime? startDateFilter = null,
         [Description("Optional: End date filter (inclusive) - only show requests ending on or before this date")] DateTime? endDateFilter = null)
     {
-        return (await service.ListTimeOffRequests(userId, startDateFilter, endDateFilter)).ToMcpView();
+        var oboToken = await GetOboTokenAsync();
+        return (await service.ListTimeOffRequests(userId, startDateFilter, endDateFilter, oboToken)).ToMcpView();
     }
     
 
@@ -45,6 +84,7 @@ public sealed class SuccessFactorsTimeOffMcp
     public async Task<string> DeleteTimeOffRequest(
         [Description("External code of the time off request to delete")] string externalCode)
     {
-        return (await service.DeleteTimeOffRequest(externalCode)).ToMcpView();
+        var oboToken = await GetOboTokenAsync();
+        return (await service.DeleteTimeOffRequest(externalCode, oboToken)).ToMcpView();
     }
 }
